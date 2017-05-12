@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 variable "server_port" {
-  default = "8080"
+  default = "80"
 }
 
 variable "ssh_port" {
@@ -15,6 +15,13 @@ resource "aws_instance" "ec2-instance" {
   instance_type = "t2.micro"
   key_name = "test-ec2"
   vpc_security_group_ids = ["${aws_security_group.sg-instance.id}"]
+
+  user_data = <<-EOF
+  #!/bin/bash
+  yum update -y
+  yum install httpd -y
+  service httpd start
+  EOF
 
   tags {
     Name="terraform-ec2-sg-example"
@@ -34,6 +41,20 @@ resource "aws_security_group" "sg-instance" {
   ingress {
     from_port = "${var.ssh_port}"
     to_port = "${var.ssh_port}"
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 80
+    to_port = 80
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
